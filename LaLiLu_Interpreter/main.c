@@ -273,7 +273,7 @@ void processInstruction(void) {
 		memory[args[2]] = xor (memory[args[0]], memory[args[1]]);
 		break;
 	case 39:
-		memory[args[2]] = cmp(memory[args[0]]);
+		memory[args[1]] = cmp(memory[args[0]]);
 		break;
 	case 40:
 		memory[args[2]] = rotateL(memory[args[0]], memory[args[1]]);

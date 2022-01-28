@@ -210,7 +210,7 @@ int main(int argc, char** args) {
 			free(copy);
 			continue;
 		}
-		if (error = parseCommand("cmp", 39, 3, line, oFile)) {
+		if (error = parseCommand("cmp", 39, 2, line, oFile)) {
 			if (error == -1) {
 				return 5;
 			}
