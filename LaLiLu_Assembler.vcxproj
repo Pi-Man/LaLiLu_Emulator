@@ -23,6 +23,7 @@
     <ProjectGuid>{726509B1-74B7-48FD-9636-90C916C32642}</ProjectGuid>
     <RootNamespace>LaLiLuAssembler</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+    <ProjectName>LaLiLu_Emulator</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

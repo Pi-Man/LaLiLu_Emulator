@@ -317,14 +317,21 @@ int main(int argc, char** args) {
 			free(copy);
 			continue;
 		}
-		if (error = parseCommand("jmp", 56, 1, line, oFile)) {
+		if (error = parseCommand("goto", 56, 1, line, oFile)) {
 			if (error == -1) {
 				return 5;
 			}
 			free(copy);
 			continue;
 		}
-		if (error = parseCommand("nop", 57, 0, line, oFile)) {
+		if (error = parseCommand("jmp", 57, 2, line, oFile)) {
+			if (error == -1) {
+				return 5;
+			}
+			free(copy);
+			continue;
+		}
+		if (error = parseCommand("nop", 58, 0, line, oFile)) {
 			if (error == -1) {
 				return 5;
 			}
@@ -447,7 +454,7 @@ int parseCommand(const char * name, int code, int numArgs, char * line, FILE * o
 	int n = strlen(name);
 	if (strncmp(line, name, n) == 0) {
 		line += n;
-		if (*line != ' ') return 0;
+		if (!(isspace(*line) || (*line == 0 && numArgs == 0))) return 0;
 		int * args = malloc(sizeof(int) * numArgs);
 		for (int i = 0; i < numArgs; i++) {
 			args[i] = parseInteger(&line);

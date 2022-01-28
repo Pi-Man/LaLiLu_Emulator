@@ -65,9 +65,24 @@ tsnz d104
 inc d224
 
 decsz d151
-jmp d7
+goto d7
 
-mov d221 t222222
-mov d222 t222222
-mov d223 t222222
-mov d224 t222222
+mov d221 d4
+ts d2 d0 d2
+ttsa d2 d0
+jmp d2 d1
+
+mov d222 d4
+ts d2 d0 d2
+ttsa d2 d0
+jmp d2 d1
+
+mov d223 d4
+ts d2 d0 d2
+ttsa d2 d0
+jmp d2 d1
+
+mov d224 d4
+ts d2 d0 d2
+ttsa d2 d0
+jmp d2 d1
