@@ -1,6 +1,6 @@
-#INFO
+# INFO
 
-This project is directly inspired by Mili's songs [Ga1ahad and Scientific Witchery]<https://www.youtube.com/watch?v=d-nxW9qBtxQ> and [Sl0t]<https://www.youtube.com/watch?v=WpE98Jn6dAY>
+This project is directly inspired by Mili's songs [Ga1ahad and Scientific Witchery](https://www.youtube.com/watch?v=d-nxW9qBtxQ) and [Sl0t](https://www.youtube.com/watch?v=WpE98Jn6dAY)
  (other possibly related songs include RTRT, world.execute(me);, and Witch's Invitation, however theses songs are not directly related to this project)
 
 It consists of two programs, an assembler and an emulator.  The assembler will read an assembler file(s) passed by command line arguments.  
@@ -11,14 +11,14 @@ It will then output a text file comprised of the "words" `ta`, `tu`, `la`, `li`,
 * `li` is a trit with value 1.
 * `lu` is a trit with value 2.
 
-#Assembler
+# Assembler
 
 The assembler currently only reads from the first file given as an argument and outputs to the file listed after the -o flag (defaulting to out.scwt).  
 It uses a custom instruction set that is being developed alongside the Assembler and Emulator.
 
 Currently the Assembler can only read instructions and ignore comments.  Any other text will try to be read as an instruction and will generate an error (skipping the line entirely and continuing with the rest of the program)
 
-##instruction set
+## instruction set
 
 all "source" and "destination" arguments are memory addresses
 
@@ -27,6 +27,7 @@ all "source" and "destination" arguments are memory addresses
 "none" indicates that the instruction does not take any arguments
 
 |name|id|arguments|description|
+|----|--|---------|-----------|
 |clr|1|destination|sets the destination value to 0
 |set|2|destination value|sets the destination value to "value"
 |mov|3|source destination|sets the destination value to the source value
