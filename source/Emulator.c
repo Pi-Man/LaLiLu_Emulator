@@ -12,104 +12,11 @@
 #include <Windows.h>
 #include <conio.h>
 #else
-//#include <termios.h>
-
-// void _kbhit() {
-//   struct termios default;
-//   struct termios new;
-//   tcgetattr(STDIN_FILENO, &default);
-//   new = default;
-//   default.c_lflags &= ~ECHO;
-//   default.c_lflags &= ~ICANON;
-//   tcsetattr(STDIN_FILENO, TCSANOW, &new);
-//   int c = getchar();
-
-//   if (c == 0 || c == -1) {
-//     return 0;
-//   }
-//   else {
-//     ungetc(c, stdin);
-//     return 1;
-//   }
-// }
-
-//#include <ncurses.h>
-// #include <curses.h>
-
-// void initNCurses() {
-//   initscr();
-//   cbreak();
-//   noecho();
-//   halfdelay(0);
-// }
-// void closeNCurses() {
-//   endwin();
-// }
-
-// int _kbhit(void) {
-//   //nodelay();
-//   noecho();
-//   //initNCurses();
-//   int c = getch();
-//   if (c == ERR) {
-//     //closeNCurses();
-//     return 0;
-//   }
-//   else {
-//     ungetch(c);
-//     //closeNCurses();
-//     return 1;
-//   }
-// }
-
-// int _getch(void) {
-//   return getch();
-// }
-
-
+// modified from
 // https://cboard.cprogramming.com/c-programming/63166-kbhit-linux-post449307.html#post449307
-// #include <stdio.h>
 #include <termios.h>
 #include <unistd.h>
-// #include <sys/types.h>
-// #include <sys/time.h>
 #include <fcntl.h>
- 
-// void changemode(int dir)
-// {
-//   static struct termios oldt, newt;
- 
-//   if ( dir != 0 )
-//   {
-//     tcgetattr( STDIN_FILENO, &oldt);
-//     newt = oldt;
-//     newt.c_lflag &= ~( ICANON | ECHO );
-//     tcsetattr( STDIN_FILENO, TCSANOW, &newt);
-//   }
-//   else
-//     tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
-// }
- 
-// int _kbhit(void)
-// {
-//   struct timeval tv;
-//   fd_set rdfs;
- 
-//   tv.tv_sec = 0;
-//   tv.tv_usec = 0;
- 
-//   FD_ZERO(&rdfs);
-//   FD_SET (STDIN_FILENO, &rdfs);
- 
-//   select(STDIN_FILENO+1, &rdfs, NULL, NULL, &tv);
-//   int ret = FD_ISSET(STDIN_FILENO, &rdfs);
-//   return ret;
-// }
-
-// int _getch(void) {
-//   int c = getchar();
-//   return c;
-// }
 
 void setImmediate(int set) {
   static struct termios oldt, newt;

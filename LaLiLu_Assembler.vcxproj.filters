@@ -15,19 +15,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.c">
+    <ClCompile Include="source\Emulator.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="test.asm">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="test.scwt">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="diceRolls.asm">
-      <Filter>Resource Files</Filter>
-    </None>
   </ItemGroup>
 </Project>
