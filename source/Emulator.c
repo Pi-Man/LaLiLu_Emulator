@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
+// TODO: MAKE MODULES (timer, io, program, ALU, clock(s), ...)
+
 #ifdef _WIN32
 #include <Windows.h>
 #include <conio.h>
@@ -85,7 +87,7 @@ typedef uint64_t INST;
 #define STACK_SIZE 27
 #define INPUT_BUFFER_SIZE 27
 
-#define STATUS_REG 1
+#define STATUS_REG 1 // TODO
 	#define CARRY_TRIT 0
 	#define ZERO_BIT 1
 #define TRX_REG 2
@@ -95,20 +97,27 @@ typedef uint64_t INST;
 	#define TX_COUNT_H_TRIT 3
 	#define RX_COUNT_L_TRIT 4
 	#define RX_COUNT_H_TRIT 5
-#define RX_REG 3
-#define TX_REG 4
-#define TIMER_OPT_REG 5
-#define TIMER_L_REG 6
-#define TIMER_H_REG 7
-#define PC_REG 8
+#define TX_REG 3
+#define RX_REG 4
+#define TX_SELECT 5 // TODO
+#define RX_SELECT 6 // TODO
+#define TIMER_OPT_REG 7 // TODO
+	#define	TIMER_SPEED_L_TRIT 0
+	#define	TIMER_SPEED_H_TRIT 1
+	#define TIMER_ENABLE_BIT 2
+#define TIMER_L_REG 8 // TODO
+#define TIMER_H_REG 9
+#define PC_REG 10 // TODO
+
+TRYTE timerSpeed;
 
 TRYTE * memory;
 HTWORD stack[27];
 TRYTE stackPointer;
 TRIT inputBuffer[27];
 INST * programMemory;
-HTWORD programCounter;
-TRYTE printTryte;
+#define programCounter memory[PC_REG]
+TRYTE outputTryte;
 TRYTE inputTryte;
 
 INST makeInstruction(TRYTE, TRYTE, TRYTE, TRYTE, TRYTE);
@@ -177,6 +186,7 @@ int main(int argc, char ** args) {
 	int tritNum = 0;
 	puts("loading program from file");
 	int readerror;
+	// TODO read from virtual persistent memory
 	while ((readerror = readTrit(trit, file)) != EOF) {
 		if (readerror) {
 			printf("illformed program at trit %d, value was %s.  truncating program\n", tritNum, trit);
@@ -299,7 +309,7 @@ int main(int argc, char ** args) {
           puts("invalid input");
         }
       }
-		}
+	}
     if (inputCount && getTrit(memory[TRX_REG], RX_BIT) == 0) {
       inputCount--;
       memory[RX_REG] = memory[RX_REG] / 3 + inputTryte % 3 * 243;
@@ -315,16 +325,31 @@ int main(int argc, char ** args) {
       memory[TRX_REG] = setTRIT(memory[TRX_REG], RX_COUNT_L_TRIT, receiveCount % 3);
     }
 		if (getTrit(memory[TRX_REG], TX_BIT) == 2) {
-			printTryte = printTryte / 3 + getTrit(memory[TX_REG], 0) * 243;
+			outputTryte = outputTryte / 3 + getTrit(memory[TX_REG], 0) * 243;
 			memory[TX_REG] /= 3;
 			TRYTE transmitCount = shiftR(memory[TRX_REG], TX_COUNT_L_TRIT) % 9 + 1;
 			if (transmitCount == 6) {
 				memory[TRX_REG] = setTRIT(memory[TRX_REG], TX_BIT, 0);
 				transmitCount = 0;
-				printf("%d\n", printTryte);
+				printf("%d\n", outputTryte);
 			}
 			memory[TRX_REG] = setTRIT(memory[TRX_REG], TX_COUNT_H_TRIT, transmitCount / 3);
 			memory[TRX_REG] = setTRIT(memory[TRX_REG], TX_COUNT_L_TRIT, transmitCount % 3);
+		}
+		if (getTrit(memory[TIMER_OPT_REG], TIMER_ENABLE_BIT) == 2) {
+			TRYTE timerSpeedSetting = memory[TIMER_OPT_REG] % 9;
+			timerSpeed += shiftL(1, 6 - timerSpeedSetting);
+			timerSpeed %= 729;// TODO: make operations mod by 729 automatically
+			if (timerSpeed == 0) {
+				memory[TIMER_L_REG]++;
+				if (memory[TIMER_L_REG] == 729) {
+					memory[TIMER_L_REG] = 0;
+					memory[TIMER_H_REG]++;
+					if (memory[TIMER_H_REG] == 729) {
+						memory[TIMER_H_REG] = 0;
+					}
+				}
+			}
 		}
 		processInstruction();
 		programCounter++;
@@ -404,9 +429,11 @@ void processInstruction(void) {
 		break;
 	case 20:
 		memory[args[0]]++;
+		memory[args[0]] %= 729;
 		break;
 	case 21:
 		memory[args[0]]++;
+		memory[args[0]] %= 729;
 		if (memory[args[0]] == 0) programCounter++;
 		break;
 	case 27:
