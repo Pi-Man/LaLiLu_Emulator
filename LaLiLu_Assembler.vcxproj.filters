@@ -18,5 +18,37 @@
     <ClCompile Include="source\Emulator.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ALU.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="volitile_storage.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="io.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="device_ports.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="volitile_storage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SFR.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ALU.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="device_ports.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

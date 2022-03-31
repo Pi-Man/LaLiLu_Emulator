@@ -6,17 +6,17 @@ set d204 d4 ; div
 tc d2 d1
 ttsu d2 d1
 jmp d2 d1
-mov d3 d100
+mov d5 d100
 
 tc d2 d1
 ttsu d2 d1
 jmp d2 d1
-mov d3 d101
+mov d5 d101
 
 tc d2 d1
 ttsu d2 d1
 jmp d2 d1
-mov d3 d102
+mov d5 d102
 
 sub d102 d201 d150
 tsnz d150

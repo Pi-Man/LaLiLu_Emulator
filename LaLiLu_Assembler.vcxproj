@@ -19,7 +19,19 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ALU.c" />
+    <ClCompile Include="device_ports.c" />
+    <ClCompile Include="io.c" />
+    <ClCompile Include="volitile_storage.c" />
     <ClCompile Include="source\Emulator.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ALU.h" />
+    <ClInclude Include="device_ports.h" />
+    <ClInclude Include="io.h" />
+    <ClInclude Include="SFR.h" />
+    <ClInclude Include="volitile_storage.h" />
+    <ClInclude Include="types.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
