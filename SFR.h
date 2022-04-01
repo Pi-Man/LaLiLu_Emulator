@@ -14,14 +14,12 @@
 #define BAUD_RATE_REG 3 // TODO
 #define TX_REG 4
 #define RX_REG 5
-#define TX_SELECT_REG 6 // TODO
-#define RX_SELECT_REG 7 // TODO
-#define TIMER_OPT_REG 8
+#define TIMER_OPT_REG 6
 	#define TIMER_SPEED_L_TRIT 0
 	#define TIMER_SPEED_H_TRIT 1
 	#define TIMER_ENABLE_BIT 2
-#define TIMER_L_REG 9
-#define TIMER_H_REG 10
-#define PC_REG 11
+#define TIMER_L_REG 7
+#define TIMER_H_REG 8
+#define PC_REG 9
 
 #endif

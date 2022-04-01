@@ -4,6 +4,11 @@
 #include <malloc.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
+
+#include "../SFR.h"
+
+#define nameof(x) #x
 
 char * getLine(FILE *);
 
@@ -20,6 +25,43 @@ int writeArgument(int, FILE *);
 int parseCommand(const char *, int, int, char *, FILE *);
 
 int main(int argc, char** args) {
+	int macros_size = 20, macros_capacity = 20;
+	char *(*macros)[2] = malloc(sizeof(char *[2]) * 20);
+
+#define INSERT_REG(id, a) \
+macros[id][0] = #a; \
+macros[id][1] = "d"nameof(a)
+
+	INSERT_REG(0, STATUS_REG);
+	INSERT_REG(1, CARRY_TRIT);
+	INSERT_REG(2, ZERO_BIT);
+
+	INSERT_REG(3, TRX_REG);
+	INSERT_REG(4, TX_BIT);
+	INSERT_REG(5, RX_BIT);
+	INSERT_REG(6, TX_COUNT_L_TRIT);
+	INSERT_REG(7, TX_COUNT_H_TRIT);
+	INSERT_REG(8, RX_COUNT_L_TRIT);
+	INSERT_REG(9, RX_COUNT_H_TRIT);
+
+	INSERT_REG(10, BAUD_RATE_REG);
+
+	INSERT_REG(11, TX_REG);
+
+	INSERT_REG(12, RX_REG);
+
+	INSERT_REG(13, TIMER_OPT_REG);
+	INSERT_REG(14, TIMER_SPEED_L_TRIT);
+	INSERT_REG(15, TIMER_SPEED_H_TRIT);
+	INSERT_REG(16, TIMER_ENABLE_BIT);
+
+	INSERT_REG(17, TIMER_L_REG);
+
+	INSERT_REG(18, TIMER_H_REG);
+
+	INSERT_REG(19, PC_REG);
+
+#undef INSERT_REG
 
 	char ** inputFiles = malloc(sizeof(char*));
 	size_t inputFilesSize = 0;
@@ -82,6 +124,15 @@ int main(int argc, char** args) {
 			return 6;
 		}
 		if (*line == 0) continue;
+		
+		for (int i = 0; i < macros_size; i++) {
+			char * token = strstr(line, macros[i][0]);
+			if (token) {
+				memmove(token + strlen(macros[i][1]), token + strlen(macros[i][0]), strlen(token) - strlen(macros[i][0]) + 1);
+				memcpy(token, macros[i][1], strlen(macros[i][1]));
+			}
+		}
+
 		puts(line);
 		int error;
 
