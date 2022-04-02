@@ -25,8 +25,8 @@ int writeArgument(int, FILE *);
 int parseCommand(const char *, int, int, char *, FILE *);
 
 int main(int argc, char** args) {
-	int macros_size = 20, macros_capacity = 20;
-	char *(*macros)[2] = malloc(sizeof(char *[2]) * 20);
+	int macros_size = 20, macros_capacity = 30;
+	char *(*macros)[2] = malloc(sizeof(char *[2]) * 30);
 
 #define INSERT_REG(id, a) \
 macros[id][0] = #a; \
@@ -128,9 +128,43 @@ macros[id][1] = "d"nameof(a)
 		for (int i = 0; i < macros_size; i++) {
 			char * token = strstr(line, macros[i][0]);
 			if (token) {
-				memmove(token + strlen(macros[i][1]), token + strlen(macros[i][0]), strlen(token) - strlen(macros[i][0]) + 1);
-				memcpy(token, macros[i][1], strlen(macros[i][1]));
+				if (macros[i][1]) {
+					if (strlen(macros[i][1]) > strlen(macros[i][0])) {
+						copy = line = realloc(line, strlen(line) + 1 + strlen(macros[i][1]) - strlen(macros[i][0]));
+						token = strstr(line, macros[i][0]);
+					}
+					memmove(token + strlen(macros[i][1]), token + strlen(macros[i][0]), strlen(token) - strlen(macros[i][0]) + 1);
+					memcpy(token, macros[i][1], strlen(macros[i][1]));
+				}
+				else {
+					memmove(token, token + strlen(macros[i][0]), strlen(token) - strlen(macros[i][0]) + 1);
+				}
 			}
+		}
+
+		if (strncmp("#define ", line, 8) == 0) {
+			if (macros_size == macros_capacity) {
+				macros_capacity *= 2;
+				macros = realloc(macros, sizeof(char *[2]) * macros_capacity);
+			}
+			char * key = line + 8;
+			if (!*key) {
+				puts("no macro key given, skipping line");
+				continue;
+			}
+			char * value = strchr(key, ' ') + 1;
+			if (value) {
+				value[-1] = 0;
+				macros[macros_size][1] = malloc(strlen(value) + 1);
+				memcpy(macros[macros_size][1], value, strlen(value) + 1);
+			}
+			else {
+				macros[macros_size][1] = NULL;
+			}
+			macros[macros_size][0] = malloc(strlen(key) + 1);
+			memcpy(macros[macros_size][0], key, strlen(key) + 1);
+			macros_size++;
+			continue;
 		}
 
 		puts(line);
