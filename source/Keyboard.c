@@ -27,6 +27,7 @@ int main(int argc, char ** argv) {
 	while (1) {
 		if (_kbhit()) {
 			char c = _getch();
+			if (c == 13) c = 10;
 			sendKey(c);
 			_putch(c);
 			_putch('\n');

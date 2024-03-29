@@ -12,9 +12,9 @@ extern HANDLE srlio[27 * 2];
 
 void start_USRT(void);
 
-TRYTE __io_read(void);
-void __io_write(TRYTE);
-TRIT __io_has_input(void);
-TRIT __io_has_output(void);
+tryte_t __io_read(void);
+void __io_write(tryte_t);
+trit_t __io_has_input(void);
+trit_t __io_has_output(void);
 
 #endif

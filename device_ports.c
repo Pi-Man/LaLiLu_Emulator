@@ -10,50 +10,51 @@
 
 #include "io.h"
 
-int id = 0;
+intptr_t device_handle;
+const char* device = NULL;
 
 #ifdef _WIN32
 
-inline void createDevice(const char * name) {
-	srlio[id] = CreateNamedPipe("\\\\.\\pipe\\srlin", PIPE_ACCESS_INBOUND, PIPE_TYPE_BYTE | PIPE_NOWAIT, 27, 0, 32, 0, NULL);
-	srlio[id + 27] = CreateNamedPipe("\\\\.\\pipe\\srlout", PIPE_ACCESS_OUTBOUND, PIPE_TYPE_BYTE | PIPE_NOWAIT, 27, 32, 0, 0, NULL);
-	id++;
-	_spawnlp(_P_NOWAIT, "cmd", "cmd", "/C", "conhost", name, NULL);
-	ConnectNamedPipe(srlio[id], NULL);
-	ConnectNamedPipe(srlio[id + 27], NULL);
+inline int createDevice(const char * name) {
+	if (device) return -1;
+	device = name;
+	srlio[0] = CreateNamedPipe("\\\\.\\pipe\\srlin", PIPE_ACCESS_INBOUND, PIPE_TYPE_BYTE | PIPE_NOWAIT, 1, 0, 32, 0, NULL);
+	if (!srlio[0]) return -1;
+	srlio[1] = CreateNamedPipe("\\\\.\\pipe\\srlout", PIPE_ACCESS_OUTBOUND, PIPE_TYPE_BYTE | PIPE_NOWAIT, 1, 32, 0, 0, NULL);
+	if (!srlio[1]) return -1;
+	device_handle = _spawnlp(_P_NOWAIT, "cmd", "cmd", "/C", "conhost", name, NULL);
+	if (!device_handle) return -1;
+	if (!ConnectNamedPipe(srlio[0], NULL)) return -1;
+	if (!ConnectNamedPipe(srlio[1], NULL)) return -1;
+	return 0;
+}
+
+inline int removeDevice() {
+	if (!DisconnectNamedPipe(srlio[0])) return -1;
+	if (!DisconnectNamedPipe(srlio[1])) return -1;
+	if (!TerminateProcess((HANDLE) device_handle, 0)) return -1;
+	return 0;
 }
 
 #else
 
 #endif
 
-const char* devicePorts[27] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
 int toggleDevice(const char * name) {
-	for (int i = 0; i < 27; i++) {
-		if (devicePorts[i] && strcmp(devicePorts[i], name) == 0) {
-			return unplugDevice(name);
+	if (device) {
+		if (strcmp(device, name) == 0) {
+			return unplugDevice();
 		}
+		else return -1;
 	}
 	return plugInDevice(name);
 }
 
 int plugInDevice(const char * name) {
-	int i;
-	for (i = 0; i < 27; i++) {
-		if (!devicePorts[i]) break;
-	}
-	if (i == 27) return -1;
-	createDevice(name);
-	devicePorts[i] = name;
-	return i;
+	if (device) return -1;
+	return createDevice(name);
 }
 
-int unplugDevice(const char * name) {
-	for (int i = 0; i < 27; i++) {
-		if (devicePorts[i] && strcmp(devicePorts[i], name) == 0) {
-			devicePorts[i] = 0;
-			return i;
-		}
-	}
+int unplugDevice() {
+	return removeDevice();
 }

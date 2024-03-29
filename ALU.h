@@ -3,30 +3,30 @@
 
 #include "types.h"
 
-TRYTE __add(TRYTE a, TRYTE b);
+tryte_t __add(tryte_t a, tryte_t b);
 
-TRYTE __sub(TRYTE a, TRYTE b);
+tryte_t __sub(tryte_t a, tryte_t b);
 
-__mul_t __mul(TRYTE a, TRYTE b);
+___mul_t __mul(tryte_t a, tryte_t b);
 
-__div_t __div(TRYTE a, TRYTE b);
-
-
-TRYTE __rot_l(TRYTE value, TRYTE amount);
-
-TRYTE __rot_r(TRYTE value, TRYTE amount);
-
-TRYTE __rot_l_c(TRYTE value, TRYTE amount);
-
-TRYTE __rot_r_c(TRYTE value, TRYTE amount);
+___div_t __div(tryte_t a, tryte_t b);
 
 
-TRYTE __and(TRYTE a, TRYTE b);
+tryte_t __rot_l(tryte_t value, tryte_t amount);
 
-TRYTE __or(TRYTE a, TRYTE b);
+tryte_t __rot_r(tryte_t value, tryte_t amount);
 
-TRYTE __xor(TRYTE a, TRYTE b);
+tryte_t __rot_l_c(tryte_t value, tryte_t amount);
 
-TRYTE __cmp(TRYTE a);
+tryte_t __rot_r_c(tryte_t value, tryte_t amount);
+
+
+tryte_t __and(tryte_t a, tryte_t b);
+
+tryte_t __or(tryte_t a, tryte_t b);
+
+tryte_t __xor(tryte_t a, tryte_t b);
+
+tryte_t __cmp(tryte_t a);
 
 #endif

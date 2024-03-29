@@ -30,6 +30,12 @@
     <ClCompile Include="device_ports.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="types.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SFR.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="types.h">

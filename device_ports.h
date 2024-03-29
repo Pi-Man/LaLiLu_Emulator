@@ -5,6 +5,6 @@ int toggleDevice(const char * name);
 
 int plugInDevice(const char * name);
 
-int unplugDevice(const char * name);
+int unplugDevice();
 
 #endif

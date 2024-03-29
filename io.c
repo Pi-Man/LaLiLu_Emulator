@@ -53,8 +53,8 @@ Thread createThread(void * (*routine)(void*), unsigned int stackSize, void * arg
 #define OUTPUT_HEAD outputBuffer[outputBufferHeadPointer]
 #define OUTPUT_TAIL outputBuffer[outputBufferTailPointer]
 
-TRYTE inputBuffer[27];
-TRYTE outputBuffer[27];
+tryte_t inputBuffer[27];
+tryte_t outputBuffer[27];
 int inputBufferHeadPointer = 0;
 int inputBufferTailPointer = 0;
 int outputBufferHeadPointer = 0;
@@ -66,11 +66,25 @@ unsigned char outputCount = 0;
 static int io_running = 0;
 static Thread thread = 0;
 
+inline trit_t shiftLeft(tryte_t *tryte, trit_t trit) {
+	trit_t ret = tryte->trits[0];
+	memmove(tryte, sizeof(trit_t) + (char*)tryte, TRYTE_TRITS - 1);
+	tryte->trits[TRYTE_TRITS - 1] = trit;
+	return ret;
+}
+
+inline trit_t shiftRight(tryte_t *tryte, trit_t trit) {
+	trit_t ret = tryte->trits[TRYTE_TRITS - 1];
+	memmove(sizeof(trit_t) + (char*)tryte, tryte, TRYTE_TRITS - 1);
+	tryte->trits[0] = trit;
+	return ret;
+}
+
 inline void pushInput() {
 	inputCount = 0;
 }
 
-inline int getTrit(TRIT * out) {
+inline int getTrit(trit_t * out) {
 
 	char trit[2];
 
@@ -91,10 +105,7 @@ inline int getTrit(TRIT * out) {
 		}
 	}
 	else if (trit[0] == 't') {
-		if (trit[1] == 'a') {
-			pushInput();
-		}
-		else if (trit[1] == 'u') {
+		if (trit[1] == 'a' || trit[1] == 'u') {
 			pushInput();
 		}
 	}
@@ -104,15 +115,14 @@ inline int getTrit(TRIT * out) {
 
 inline void _readTrit(void) {
 
-	TRIT trit;
+	trit_t trit;
 	if (!getTrit(&trit)) return;
 
-	INPUT_TAIL /= 3;
-	INPUT_TAIL += trit * 243;
+	shiftRight(&INPUT_TAIL, trit);
 
 	if (inputCount == 5) {
 		inputCount = 0;
-		puts("tryte read");
+		//puts("tryte read");
 		inputBufferTailPointer++;
 		if (inputBufferTailPointer == 27) inputBufferTailPointer = 0;
 	}
@@ -123,24 +133,26 @@ inline void _readTrit(void) {
 
 inline void _writeTrit(void) {
 
-	TRIT trit = OUTPUT_HEAD % 3;
-	OUTPUT_HEAD /= 3;
+	trit_t trit = shiftRight(&OUTPUT_HEAD, 0);
 
 	switch (trit) {
 	case 0:
 		write("la");
+		//puts("la");
 		break;
 	case 1:
 		write("li");
+		//puts("li");
 		break;
 	case 2:
 		write("lu");
+		//puts("lu");
 		break;
 	}
 
 	outputCount++;
 	if (outputCount == 6) {
-		puts("tryte written");
+		//puts("tryte written");
 		outputCount = 0;
 		outputBufferHeadPointer++;
 		if (outputBufferHeadPointer == 27) outputBufferHeadPointer = 0;
@@ -164,25 +176,25 @@ void start_USRT(void) {
 	thread = createThread(main_loop, 256, NULL);
 }
 
-TRYTE __io_read(void) {
-	TRYTE tryte = INPUT_HEAD;
-	printf("reading %d\n", tryte);
+tryte_t __io_read(void) {
+	tryte_t tryte = INPUT_HEAD;
+	//printf("reading %d\n", fromTryte(tryte));
 	inputBufferHeadPointer++;
 	if (inputBufferHeadPointer == 27) inputBufferHeadPointer = 0;
 	return tryte;
 }
 
-void __io_write(TRYTE tryte) {
-	printf("writing %d\n", tryte);
+void __io_write(tryte_t tryte) {
+	//printf("writing %d\n", fromTryte(tryte));
 	OUTPUT_TAIL = tryte;
 	outputBufferTailPointer++;
-	if (outputBufferTailPointer == 27) outputBufferTailPointer--;
+	if (outputBufferTailPointer == 27) outputBufferTailPointer = 0;
 }
 
-TRIT __io_has_input(void) {
-	return inputBufferHeadPointer == inputBufferTailPointer ? 0 : 2;
+trit_t __io_has_input(void) {
+	return inputBufferHeadPointer == inputBufferTailPointer || inputCount != 0 ? 0 : 2;
 }
 
-TRIT __io_has_output(void) {
+trit_t __io_has_output(void) {
 	return outputBufferHeadPointer == outputBufferTailPointer ? 0 : 2;
 }

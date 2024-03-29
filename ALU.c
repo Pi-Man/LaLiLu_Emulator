@@ -1,140 +1,181 @@
 #include "ALU.h"
 
+#include <string.h>
+
 #include "volitile_storage.h"
 
-inline TRYTE min(TRYTE a, TRYTE b) {
-	return a > b ? b : a;
+//inline tryte_t min(tryte_t a, tryte_t b) {
+//	return a > b ? b : a;
+//}
+//
+//inline tryte_t max(tryte_t a, tryte_t b) {
+//	return a < b ? b : a;
+//}
+
+tryte_t __add(tryte_t a, tryte_t b) {
+	tryte_t res;
+	unsigned char carry = 0;
+	char zero = 1;
+	for (int i = TRYTE_TRITS - 1; i >= 0; i--) {
+		unsigned char c = a.trits[i] + b.trits[i] + carry;
+		zero &= c == 0;
+		res.trits[i] = c < 3 ? c : c - 3;
+		carry = c >= 3;
+	}
+	__ram_set_trit_(STATUS_REG_V, ZERO_BIT_V, zero ? 2 : 0);
+	__ram_set_trit_(STATUS_REG_V, CARRY_TRIT_V, carry);
+	return res;
 }
 
-inline TRYTE max(TRYTE a, TRYTE b) {
-	return a < b ? b : a;
+tryte_t __sub(tryte_t a, tryte_t b) {
+	tryte_t res;
+	signed char carry = 0;
+	char zero = 1;
+	for (int i = TRYTE_TRITS - 1; i >= 0; i--) {
+		signed char c = a.trits[i] - b.trits[i] - carry;
+		zero &= c == 0;
+		carry = c < 0;
+		res.trits[i] = carry ? c + 3 : c;
+	}
+	__ram_set_trit_(STATUS_REG_V, ZERO_BIT_V, zero ? 2 : 0);
+	__ram_set_trit_(STATUS_REG_V, CARRY_TRIT_V, 2 - carry);
+	return res;
 }
 
-TRYTE __add(TRYTE a, TRYTE b) {
-	TRYTE res = a + b;
-	TRIT carry = res / 729;
-	__ram_set_trit(STATUS_REG, CARRY_TRIT, carry);
-	__ram_set_trit(STATUS_REG, ZERO_BIT, (res - carry * 729) ? 0 : 2);
-	return res - carry * 729;
-}
-
-TRYTE __sub(TRYTE a, TRYTE b) {
-	TRYTE res = (a + 729) - b;
-	TRIT carry = res / 729;
-	__ram_set_trit(STATUS_REG, CARRY_TRIT, carry);
-	__ram_set_trit(STATUS_REG, ZERO_BIT, (res - carry * 729) ? 0 : 2);
-	return res - carry * 729;
-}
-
-__mul_t __mul(TRYTE a, TRYTE b) {
-	HTWORD res = a * b;
-	__mul_t ret;
-	ret.h = res / 729;
-	ret.h = res - ret.h * 729;
-	__ram_set_trit(STATUS_REG, CARRY_TRIT, 0);
-	__ram_set_trit(STATUS_REG, ZERO_BIT, (a || b) ? 0 : 2);
+___mul_t __mul(tryte_t a, tryte_t b) {
+	tword_t res = { { {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0} } };
+	unsigned char carry = 0;
+	unsigned char k = 0;
+	unsigned char l = 0;
+	unsigned char n = 0;
+	char zero = 1;
+	for (int i = TRYTE_TRITS - 1; i >= 0; i--) {
+		carry = 0;
+		for (int j = TRYTE_TRITS - 1; j >= 0; j--) {
+			l = TRYTE_TRITS * 2 - 2 - j - i;
+			k = l < TRYTE_TRITS ? 0 : 1;
+			n = k ? TRYTE_TRITS * 2 - 1 - l : TRYTE_TRITS - 1 - l;
+			unsigned char c = a.trits[i] * b.trits[j] + carry + res.trytes[k].trits[n];
+			zero &= c == 0;
+			carry = c >= 3;
+			res.trytes[k].trits[n] = carry ? c - 3 : c;
+		}
+		res.trytes[1].trits[i] += carry;
+	}
+	___mul_t ret;
+	ret.l = res.trytes[0];
+	ret.h = res.trytes[1];
+	__ram_set_trit_(STATUS_REG_V, CARRY_TRIT_V, 0);
+	__ram_set_trit_(STATUS_REG_V, ZERO_BIT_V, zero ? 2 : 0);
 	return ret;
 }
 
-__div_t __div(TRYTE a, TRYTE b) {
-	__div_t ret;
-	ret.qot = a / b;
-	ret.rem = a - ret.qot * b;
-	__ram_set_trit(STATUS_REG, CARRY_TRIT, 0);
-	__ram_set_trit(STATUS_REG, ZERO_BIT, a ? 0 : 2);
+___div_t __div(tryte_t a, tryte_t b) {
+	unsigned short qot, rem, a_, b_;
+	a_ = fromTryte(a);
+	b_ = fromTryte(b);
+	___div_t ret;
+	qot = a_ / b_;
+	rem = a_ - qot * b_;
+	ret.qot = makeTryte(qot);
+	ret.rem = makeTryte(rem);
+	__ram_set_trit_(STATUS_REG_V, CARRY_TRIT_V, 0);
+	__ram_set_trit_(STATUS_REG_V, ZERO_BIT_V, a_ ? 0 : 2);
 	return ret;
 }
 
 
-TRYTE __rot_l(TRYTE value, TRYTE amount) {
-	while (amount) {
-		TRIT r = value / 243;
-		value *= 3;
-		value %= 729;
-		value += r;
-		amount--;
-	}
-	__ram_set_trit(STATUS_REG, ZERO_BIT, value ? 0 : 2);
-	return value;
+tryte_t __rot_l(tryte_t value, tryte_t amount) {
+	tryte_t ret;
+	unsigned short amount_ = fromTryte(amount) % TRYTE_TRITS;
+	memmove(&ret, (trit_t*)&value + amount_, TRYTE_TRITS - amount_);
+	memmove((trit_t*)&ret + TRYTE_TRITS - amount_, &value, amount_);
+	__ram_set_trit_(STATUS_REG_V, ZERO_BIT_V, fromTryte(ret) ? 0 : 2);
+	return ret;
 }
 
-TRYTE __rot_r(TRYTE value, TRYTE amount) {
-	while (amount) {
-		TRIT r = value % 3;
-		value /= 3;
-		value += r * 243;
-		amount--;
-	}
-	__ram_set_trit(STATUS_REG, ZERO_BIT, value ? 0 : 2);
-	return value;
+tryte_t __rot_r(tryte_t value, tryte_t amount) {
+	tryte_t ret;
+	unsigned short amount_ = fromTryte(amount) % TRYTE_TRITS;
+	memmove(&ret, (trit_t*)&value + TRYTE_TRITS - amount_, amount_);
+	memmove((trit_t*)&ret + amount_, &value, TRYTE_TRITS - amount_);
+	__ram_set_trit_(STATUS_REG_V, ZERO_BIT_V, fromTryte(ret) ? 0 : 2);
+	return ret;
 }
 
-TRYTE __rot_l_c(TRYTE value, TRYTE amount) {
-	while (amount) {
-		TRIT r = value / 243;
-		value *= 3;
-		value %= 729;
-		value += __ram_get_trit(STATUS_REG, CARRY_TRIT);
-		__ram_set_trit(STATUS_REG, CARRY_TRIT, r);
-		amount--;
+tryte_t __rot_l_c(tryte_t value, tryte_t amount) {
+	tryte_t ret;
+	unsigned short amount_ = fromTryte(amount) % (TRYTE_TRITS + 1);
+	if (amount_) {
+		memmove(&ret, (trit_t*)&value + amount_, TRYTE_TRITS - amount_);
+		memmove((trit_t*)&ret + TRYTE_TRITS - amount_ + 1, &value, amount_ - 1);
+		ret.trits[TRYTE_TRITS - amount_] = __ram_get_trit(STATUS_REG_V, CARRY_TRIT_V);
+		__ram_set_trit_(STATUS_REG_V, CARRY_TRIT_V, value.trits[amount_ - 1]);
+		__ram_set_trit_(STATUS_REG_V, ZERO_BIT_V, fromTryte(ret) ? 0 : 2);
+		return ret;
 	}
-	__ram_set_trit(STATUS_REG, ZERO_BIT, value ? 0 : 2);
-	return value;
+	else {
+		return value;
+	}
 }
 
-TRYTE __rot_r_c(TRYTE value, TRYTE amount) {
-	while (amount) {
-		TRIT r = value % 3;
-		value /= 3;
-		value += __ram_get_trit(STATUS_REG, CARRY_TRIT) * 243;
-		__ram_set_trit(STATUS_REG, CARRY_TRIT, r);
-		amount--;
+tryte_t __rot_r_c(tryte_t value, tryte_t amount) {
+	tryte_t ret;
+	unsigned short amount_ = fromTryte(amount) % (TRYTE_TRITS + 1);
+	if (amount_) {
+		memmove(&ret, (trit_t*)&value + TRYTE_TRITS - amount_ + 1, amount_ - 1);
+		memmove((trit_t*)&ret + amount_, &value, TRYTE_TRITS - amount_);
+		ret.trits[amount_ - 1] = __ram_get_trit(STATUS_REG_V, CARRY_TRIT_V);
+		__ram_set_trit_(STATUS_REG_V, CARRY_TRIT_V, value.trits[TRYTE_TRITS - amount_]);
+		__ram_set_trit_(STATUS_REG_V, ZERO_BIT_V, fromTryte(ret) ? 0 : 2);
+		return ret;
 	}
-	__ram_set_trit(STATUS_REG, ZERO_BIT, value ? 0 : 2);
-	return value;
+	else {
+		return value;
+	}
 }
 
 
-TRYTE __and(TRYTE a, TRYTE b) {
-	TRYTE c = 0;
-	int i = 1;
-	for (; a && b; a /= 3, b /= 3) {
-		c += min(a % 3, b % 3) * i;
-		i *= 3;
+tryte_t __and(tryte_t a, tryte_t b) {
+	tryte_t ret;
+	char zero = 1;
+	for (int i = TRYTE_TRITS - 1; i >= 0; i--) {
+		ret.trits[i] = a.trits[i] < b.trits[i] ? a.trits[i] : b.trits[i];
+		zero &= ret.trits[i] == 0;
 	}
-	__ram_set_trit(STATUS_REG, ZERO_BIT, c ? 0 : 2);
-	return c;
+	__ram_set_trit_(STATUS_REG_V, ZERO_BIT_V, zero ? 2 : 0);
+	return ret;
 }
 
-TRYTE __or(TRYTE a, TRYTE b) {
-	TRYTE c = 0;
-	int i = 1;
-	for (; a || b; a /= 3, b /= 3) {
-		c += max(a % 3, b % 3) * i;
-		i *= 3;
+tryte_t __or(tryte_t a, tryte_t b) {
+	tryte_t ret;
+	char zero = 1;
+	for (int i = TRYTE_TRITS - 1; i >= 0; i--) {
+		ret.trits[i] = a.trits[i] > b.trits[i] ? a.trits[i] : b.trits[i];
+		zero &= ret.trits[i] == 0;
 	}
-	__ram_set_trit(STATUS_REG, ZERO_BIT, c ? 0 : 2);
-	return c;
+	__ram_set_trit_(STATUS_REG_V, ZERO_BIT_V, zero ? 2 : 0);
+	return ret;
 }
 
-TRYTE __xor(TRYTE a, TRYTE b) {
-	TRYTE c = 0;
-	int i = 1;
-	for (; a || b; a /= 3, b /= 3) {
-		c += min(max(a % 3, b % 3), 2 - min(a % 3, b % 3)) * i;
-		i *= 3;
+tryte_t __xor(tryte_t a, tryte_t b) {
+	tryte_t ret;
+	char zero = 1;
+	for (int i = TRYTE_TRITS - 1; i >= 0; i--) {
+		ret.trits[i] = 1 - (a.trits[i] - 1) * (b.trits[i] - 1);
+		zero &= ret.trits[i] == 0;
 	}
-	__ram_set_trit(STATUS_REG, ZERO_BIT, c ? 0 : 2);
-	return c;
+	__ram_set_trit_(STATUS_REG_V, ZERO_BIT_V, zero ? 2 : 0);
+	return ret;
 }
 
-TRYTE __cmp(TRYTE a) {
-	TRYTE c = 0;
-	int i = 1;
-	for (; i < 729; a /= 3) {
-		c += (2 - a % 3) * i;
-		i *= 3;
+tryte_t __cmp(tryte_t a) {
+	tryte_t ret;
+	char zero = 1;
+	for (int i = TRYTE_TRITS - 1; i >= 0; i--) {
+		ret.trits[i] = 2 - a.trits[i];
+		zero &= ret.trits[i] == 0;
 	}
-	__ram_set_trit(STATUS_REG, ZERO_BIT, c ? 0 : 2);
-	return c;
+	__ram_set_trit_(STATUS_REG_V, ZERO_BIT_V, zero ? 2 : 0);
+	return ret;
 }

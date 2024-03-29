@@ -10,19 +10,21 @@
 #define STACK_SIZE 27
 #define PROGRAM_SIZE 729
 
-#define ADDRESS TRYTE
+#define ADDRESS tryte_t
 
-extern TRYTE ram[RAM_SIZE];
-extern TRYTE stack[STACK_SIZE];
-extern INST programMemory[PROGRAM_SIZE];
+extern tryte_t ram[RAM_SIZE];
+extern tryte_t stack[STACK_SIZE];
+extern tryte_t programMemory[PROGRAM_SIZE][5];
 
-void init_ram();
+int init_volitile_storage();
 
-TRYTE __ram_get(ADDRESS address);
-void __ram_set(ADDRESS address, TRYTE value);
+tryte_t __ram_get(ADDRESS address);
+tryte_t __ram_get_(ADDRESS address);
+void __ram_set(ADDRESS address, tryte_t value);
 
-TRIT __ram_get_trit(ADDRESS address, TRYTE trit);
-void __ram_set_trit(ADDRESS address, TRYTE trit, TRIT value);
+trit_t __ram_get_trit(ADDRESS address, tryte_t trit);
+void __ram_set_trit(ADDRESS address, tryte_t trit, trit_t value);
+void __ram_set_trit_(ADDRESS address, tryte_t trit, trit_t value);
 
 void __stack_push(void);
 void __stack_pop(void);

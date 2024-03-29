@@ -10,6 +10,77 @@
 
 #define nameof(x) #x
 
+
+struct LabelPair {
+	char * name;
+	size_t address;
+} *labels;
+size_t label_size = 0, label_capacity = 0;
+
+struct Argument {
+	int value;
+	char * text;
+} *arguments;
+size_t argument_size = 0, argument_capacity = 0;
+
+struct Command {
+	int value;
+	int arg_count;
+	int args[5];
+} *commands;
+size_t command_size = 0, command_capacity = 0;
+
+void addLabel(char * line, size_t address) {
+	if (!label_capacity) {
+		labels = malloc(sizeof(struct LabelPair) * 8);
+		label_capacity = 8;
+	}
+	if (label_size >= label_capacity) {
+		label_capacity *= 2;
+		labels = realloc(labels, sizeof(struct LabelPair) * label_capacity);
+	}
+	labels[label_size].name = malloc(strlen(line) + 1);
+	memcpy(labels[label_size].name, line, strlen(line) + 1);
+	labels[label_size].address = address;
+	label_size++;
+}
+
+void addArgument(char * text, int value) {
+	if (!argument_capacity) {
+		arguments = malloc(sizeof(struct Argument) * 8);
+		argument_capacity = 8;
+	}
+	if (argument_size >= argument_capacity) {
+		argument_capacity *= 2;
+		arguments = realloc(arguments, sizeof(struct Argument) * argument_capacity);
+	}
+	if (text) {
+		arguments[argument_size].text = malloc(strlen(text) + 1);
+		memcpy(arguments[argument_size].text, text, strlen(text) + 1);
+	}
+	else {
+		arguments[argument_size].text = NULL;
+	}
+	arguments[argument_size].value = value;
+	argument_size++;
+}
+
+void addCommand(int value, int arg_count, int args[5]) {
+	if (!command_capacity) {
+		commands = malloc(sizeof(struct Command) * 8);
+		command_capacity = 8;
+	}
+	if (command_size >= command_capacity) {
+		command_capacity *= 2;
+		commands = realloc(commands, sizeof(struct Command) * command_capacity);
+	}
+	commands[command_size].value = value;
+	commands[command_size].arg_count = arg_count;
+	memcpy(commands[command_size].args, args, sizeof(int) * 5);
+	command_size++;
+}
+
+
 char * getLine(FILE *);
 
 int parseInteger(char **);
@@ -25,7 +96,8 @@ int writeArgument(int, FILE *);
 int parseCommand(const char *, int, int, char *, FILE *);
 
 int main(int argc, char** args) {
-	int macros_size = 20, macros_capacity = 30;
+	size_t address = 0;
+	int macros_size = 22, macros_capacity = 30;
 	char *(*macros)[2] = malloc(sizeof(char *[2]) * 30);
 
 #define INSERT_REG(id, a) \
@@ -60,6 +132,10 @@ macros[id][1] = "d"nameof(a)
 	INSERT_REG(18, TIMER_H_REG);
 
 	INSERT_REG(19, PC_REG);
+
+	INSERT_REG(20, FS_REG);
+
+	INSERT_REG(21, IND_REG);
 
 #undef INSERT_REG
 
@@ -123,11 +199,14 @@ macros[id][1] = "d"nameof(a)
 			free(copy);
 			return 6;
 		}
-		if (*line == 0) continue;
+		if (*line == 0) {
+			free(copy);
+			continue;
+		}
 		
 		for (int i = 0; i < macros_size; i++) {
 			char * token = strstr(line, macros[i][0]);
-			if (token) {
+			while (token && (token[strlen(macros[i][0])] == ' ' || token[strlen(macros[i][0])] == 0)) {
 				if (macros[i][1]) {
 					if (strlen(macros[i][1]) > strlen(macros[i][0])) {
 						copy = line = realloc(line, strlen(line) + 1 + strlen(macros[i][1]) - strlen(macros[i][0]));
@@ -139,6 +218,7 @@ macros[id][1] = "d"nameof(a)
 				else {
 					memmove(token, token + strlen(macros[i][0]), strlen(token) - strlen(macros[i][0]) + 1);
 				}
+				token = strstr(line, macros[i][0]);
 			}
 		}
 
@@ -150,10 +230,12 @@ macros[id][1] = "d"nameof(a)
 			char * key = line + 8;
 			if (!*key) {
 				puts("no macro key given, skipping line");
+				free(copy);
 				continue;
 			}
-			char * value = strchr(key, ' ') + 1;
+			char * value = strchr(key, ' ');
 			if (value) {
+				value++;
 				value[-1] = 0;
 				macros[macros_size][1] = malloc(strlen(value) + 1);
 				memcpy(macros[macros_size][1], value, strlen(value) + 1);
@@ -164,18 +246,27 @@ macros[id][1] = "d"nameof(a)
 			macros[macros_size][0] = malloc(strlen(key) + 1);
 			memcpy(macros[macros_size][0], key, strlen(key) + 1);
 			macros_size++;
+			free(copy);
+			continue;
+		}
+		
+		char * labelEnd;
+		if (!strchr(line, ' ') && (labelEnd = strchr(line, ':')) && labelEnd[1] == 0) {
+			*labelEnd = 0;
+			addLabel(line, address);
+			printf("%s:\n", line);
+			free(copy);
 			continue;
 		}
 
 		puts(line);
 		int error;
 
-		fputs("\n", oFile);
-
 		if (error = parseCommand("clr", 1, 1, line, oFile)) {
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -183,6 +274,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -190,6 +282,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -197,6 +290,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -205,6 +299,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -212,6 +307,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -219,6 +315,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -226,6 +323,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -234,6 +332,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -241,6 +340,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -248,6 +348,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -255,6 +356,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -263,6 +365,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -270,6 +373,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -278,6 +382,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -285,6 +390,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -292,6 +398,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -299,6 +406,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -306,6 +414,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -313,6 +422,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -320,6 +430,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -327,6 +438,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -335,6 +447,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -342,6 +455,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -349,6 +463,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -356,6 +471,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -363,6 +479,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -370,6 +487,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -377,6 +495,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -384,6 +503,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -392,6 +512,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -399,6 +520,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -406,6 +528,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -413,6 +536,7 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
@@ -420,12 +544,36 @@ macros[id][1] = "d"nameof(a)
 			if (error == -1) {
 				return 5;
 			}
+			address++;
 			free(copy);
 			continue;
 		}
 
-		printf("unknown Command: %s, skipping line\n", line);
+		printf("unknown Command: \"%s\", skipping line\n", line);
 		free(copy);
+	}
+
+	for (int i = 0; i < command_size; i++) {
+		writeCommand(commands[i].value, oFile);
+		for (int j = 0; j < commands[i].arg_count; j++) {
+			char * text = arguments[commands[i].args[j]].text;
+			if (text) {
+				int k;
+				for (k = 0; k < label_size; k++) {
+					if (strncmp(text, labels[k].name, strlen(labels[k].name)) == 0) {
+						writeArgument(labels[k].address, oFile);
+						break;
+					}
+				}
+				if (k == label_size) {
+					printf("unknown label \"%s\"\n", text);
+				}
+			}
+			else {
+				writeArgument(arguments[commands[i].args[j]].value, oFile);
+			}
+		}
+		fprintf(oFile, "\n");
 	}
 
 }
@@ -474,7 +622,12 @@ int parseInteger(char ** string) {
 	}
 
 	if (base == 0) {
-		puts("invalid integer literal");
+		if (b == '\'' && (*string)[1] == '\'') {
+			char c = **string;
+			*string += 2;
+			return c;
+		}
+		//puts("invalid integer literal");
 		return -1;
 	}
 
@@ -539,19 +692,25 @@ int parseCommand(const char * name, int code, int numArgs, char * line, FILE * o
 	if (strncmp(line, name, n) == 0) {
 		line += n;
 		if (!(isspace(*line) || (*line == 0 && numArgs == 0))) return 0;
-		int * args = malloc(sizeof(int) * numArgs);
+		line++;
+		int args[5];
 		for (int i = 0; i < numArgs; i++) {
-			args[i] = parseInteger(&line);
-			if (args[i] == -1) {
-				return -1;
+			args[i] = argument_size;
+			char * arg_start = line;
+			int arg = parseInteger(&line);
+			if (arg == -1) {
+				while (*line != ' ' && *line != 0) line++;
+				if (!*line && i != numArgs - 1) return -1;
+				if (*line && i == numArgs - 1) return -1;
+				*line = 0;
+				line++;
+				addArgument(arg_start, 0);
+			}
+			else {
+				addArgument(NULL, arg);
 			}
 		}
-		writeCommand(code, oFile);
-		for (int i = 0; i < numArgs; i++) {
-			if (writeArgument(args[i], oFile)) {
-				return -1;
-			}
-		}
+		addCommand(code, numArgs, args);
 		return 1;
 	}
 	return 0;

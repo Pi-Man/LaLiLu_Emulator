@@ -5,86 +5,95 @@
 
 #include "io.h"
 
-TRYTE ram[RAM_SIZE];
-TRYTE stack[STACK_SIZE];
-INST programMemory[PROGRAM_SIZE];
+tryte_t ram[RAM_SIZE];
+tryte_t stack[STACK_SIZE];
+tryte_t programMemory[PROGRAM_SIZE][5];
 
 static int stackPointer = 0;
 
 int init_volitile_storage() {
-	if (!memset(ram, 0, sizeof(TRYTE) * RAM_SIZE)) {
+	if (!memset(ram, 0, sizeof(ram))) {
 		return 1;
 	}
-	if (!memset(stack, 0, sizeof(TRYTE) * STACK_SIZE)) {
+	if (!memset(stack, 0, sizeof(stack))) {
 		return 1;
 	}
-	if (!memset(programMemory, 0, sizeof(TRYTE) * PROGRAM_SIZE)) {
+	if (!memset(programMemory, 0, sizeof(programMemory))) {
 		return 1;
 	}
 	return 0;
 }
 
-void init_ram() {
-
-	memset(ram, 0, sizeof(ram));
-	puts("memory initialized");
-
-	memset(stack, 0, sizeof(stack));
-	puts("stack initialized");
-
-	memset(programMemory, 0, sizeof(programMemory));
-	puts("program memory initialized");
-
-}
-
-TRYTE __ram_get(ADDRESS address) {
-	switch (address) {
-	case RX_REG:
+tryte_t __ram_get(ADDRESS address) {
+	if (memcmp(&address, &RX_REG_V, sizeof(tryte_t)) == 0) {
 		return __io_read();
-	case TX_REG:
-		return 0;
-	default:
-		return ram[address];
+	}
+	else if (memcmp(&address, &TX_REG_V, sizeof(tryte_t)) == 0) {
+		return makeTryte(0);
+	}
+	else if (memcmp(&address, &IND_REG_V, sizeof(tryte_t)) == 0) {
+		return ram[fromTryte(ram[FS_REG])];
+	}
+	else {
+		return ram[fromTryte(address)];
 	}
 }
 
-void __ram_set(ADDRESS address, TRYTE value) {
-	switch (address) {
-	case RX_REG:
-		break;
-	case TX_REG:
+tryte_t __ram_get_(ADDRESS address) {
+	return ram[fromTryte(address)];
+}
+
+void __ram_set(ADDRESS address, tryte_t value) {
+	if (memcmp(&address, &RX_REG_V, sizeof(tryte_t)) == 0) {
+		;
+	}
+	else if (memcmp(&address, &TX_REG_V, sizeof(tryte_t)) == 0) {
 		__io_write(value);
-		break;
-	default:
-		if (address > 27 || address == TRX_REG) ram[address] = value;
+	}
+	else if (memcmp(&address, &IND_REG_V, sizeof(tryte_t)) == 0) {
+		ram[fromTryte(ram[FS_REG])] = value;
+	}
+	else if (memcmp(&address, &TRX_REG_V, sizeof(tryte_t)) == 0 || memcmp(&address, &FS_REG_V, sizeof(tryte_t)) == 0 || fromTryte(address) > 27) {
+		ram[fromTryte(address)] = value;
 	}
 }
 
-TRIT __ram_get_trit(ADDRESS address, TRYTE trit) {
-	if (address == TRX_REG && trit == RX_BIT) {
-		return __io_has_input();
-	}
-	else if (address == TRX_REG && trit == TX_BIT) {
-		return __io_has_output();
-	}
-	TRYTE copy = ram[address];
-	while (trit) {
-		copy /= 3;
-		trit--;
-	}
-	return copy % 3;
+void __ram_set_(ADDRESS address, tryte_t value) {
+	ram[fromTryte(address)] = value;
 }
 
-void __ram_set_trit(ADDRESS address, TRYTE trit, TRIT value) {
-	TRYTE shiftVal = 1;
-	while (trit) {
-		shiftVal *= 3;
-		trit--;
+trit_t __ram_get_trit(ADDRESS address, tryte_t trit) {
+	unsigned short t = fromTryte(trit);
+	if (t < TRYTE_TRITS) {
+		if (memcmp(&address, &TRX_REG_V, sizeof(tryte_t)) == 0) {
+			if (t == TX_BIT) {
+				return __io_has_output();
+			}
+			else if (t == RX_BIT) {
+				return __io_has_input();
+			}
+		}
+		return __ram_get(address).trits[t];
 	}
-	TRYTE h = ram[address] - ram[address] % (shiftVal * 3);
-	TRYTE t = value * shiftVal;
-	TRYTE l = ram[address] % shiftVal;
-	ram[address] = h + t + l;
+	return 0;
+}
+
+void __ram_set_trit(ADDRESS address, tryte_t trit, trit_t value) {
+	unsigned short t = fromTryte(trit);
+	if (t < TRYTE_TRITS) {
+		tryte_t tryte = __ram_get(address);
+		tryte.trits[t] = value;
+		__ram_set(address, tryte);
+	}
+}
+
+void __ram_set_trit_(ADDRESS address, tryte_t trit, trit_t value) {
+	unsigned short t = fromTryte(trit);
+	if (t < TRYTE_TRITS) {
+		tryte_t tryte = __ram_get_(address);
+		tryte.trits[t] = value;
+		__ram_set_(address, tryte);
+	}
 }
 
 void __stack_push(void) {
